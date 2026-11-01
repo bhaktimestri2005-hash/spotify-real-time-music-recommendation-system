@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Recommender</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1DB954;
+            --bg-dark: #121212;
+            --card-dark: #181818;
+            --text-main: white;
+            --text-muted: #b3b3b3;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            transition: all 0.5s ease;
+        }
+
+        /* --- THE TIME MACHINE RETRO CSS (Grainy & Bright 90s) --- */
+        body.retro-theme {
+            background-color: #fdf5e6; /* Warm vintage paper color */
+            color: #3e2723;
+            /* Grain effect using a base64 noise pattern overlay */
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.15"/%3E%3C/svg%3E');
+        }
+
+        .retro-theme .navbar {
+            background-color: #ff9800 !important; /* 90s bright orange */
+            border-bottom: 3px solid #e65100;
+        }
+        
+        .retro-theme .navbar-brand { color: #fff !important; text-shadow: 2px 2px #d84315; font-family: 'Courier New', Courier, monospace; font-weight: 900; }
+        .retro-theme .fa-spotify { color: #fff !important; }
+
+        .retro-theme .music-card {
+            background-color: #fff8e1;
+            border: 2px solid #ffcc80;
+            box-shadow: 5px 5px 0px #ffb74d;
+            border-radius: 4px;
+        }
+        .retro-theme .music-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #ff9800; }
+
+        .retro-theme .song-title { color: #d84315; font-family: 'Georgia', serif; font-weight: 900; }
+        .retro-theme .song-meta { color: #795548; font-weight: bold; }
+        .retro-theme .album-art img { filter: sepia(0.6) contrast(1.2) brightness(1.1); }
+
+        /* --- SEARCH BAR RETRO FIX --- */
+        .retro-theme .search-input {
+            background-color: #fff8e1 !important; /* Vintage paper look */
+            border: 3px solid #d84315 !important;
+            color: #3e2723 !important;
+            border-radius: 0px !important; /* Square edges for 90s feel */
+            font-family: 'Courier New', Courier, monospace !important;
+            font-weight: bold !important;
+            box-shadow: 4px 4px 0px #ff9800 !important; /* Blocky retro shadow */
+        }
+
+        /* Jab user type karne ke liye click kare (Focus State) */
+        .retro-theme .search-input:focus {
+            background-color: #ffffff !important;
+            border-color: #e65100 !important;
+            box-shadow: 4px 4px 0px #e65100 !important;
+            outline: none !important;
+        }
+
+        /* --- AUTOCOMPLETE DROPDOWN RETRO FIX --- */
+        .retro-theme .ui-autocomplete {
+            background-color: #fff8e1 !important;
+            border: 3px solid #d84315 !important;
+            border-radius: 0px !important;
+            color: #3e2723 !important;
+            box-shadow: 4px 4px 0px #ff9800 !important;
+            font-family: 'Courier New', Courier, monospace !important;
+        }
+
+        .retro-theme .ui-menu-item-wrapper:hover, 
+        .retro-theme .ui-state-active {
+            background-color: #ff9800 !important;
+            color: white !important;
+            border: none !important;
+            font-weight: bold !important;
+        }
+
+        .retro-theme .btn-spotify {
+            background-color: #3e2723;
+            color: #ffeb3b;
+            border-radius: 0;
+            border: 2px solid #ffeb3b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .retro-theme .btn-spotify:hover { background-color: #d84315; color: white; border-color: #3e2723; }
+
+        .retro-theme .suggest-btn {
+            background: #ffecb3;
+            color: #d84315;
+            border: 2px dashed #ffb74d;
+            border-radius: 0;
+        }
+        .retro-theme .suggest-btn:hover { background: #ffcc80; border-style: solid; }
+
+        /* --- NORMAL THEME CSS --- */
+        .navbar { background-color: rgba(0, 0, 0, 0.9); border-bottom: 1px solid rgba(255, 255, 255, 0.1); transition: 0.5s; }
+        .hero-section { padding: 60px 0; text-align: center; }
+        .search-wrapper { max-width: 600px; margin: 0 auto; position: relative; }
+        .search-input { background-color: #242424 !important; border: 1px solid #333; border-radius: 500px; color: white !important; padding: 15px 30px; font-size: 1.1rem; transition: 0.3s; }
+        .search-input:focus { outline: none; border-color: var(--primary-color); background-color: #2a2a2a !important; }
+        
+        .ui-autocomplete { background-color: #282828 !important; border: 1px solid #444 !important; border-radius: 8px !important; color: white !important; font-family: 'Segoe UI', sans-serif; max-height: 250px; overflow-y: auto; padding: 5px; z-index: 1000;}
+        .ui-menu-item-wrapper:hover, .ui-state-active { background-color: var(--primary-color) !important; color: black !important; border: none !important; }
+
+        .btn-spotify { background-color: var(--primary-color); border-radius: 500px; font-weight: 700; padding: 12px 30px; color: black; border: none; margin-top: 20px; transition: 0.2s; }
+        .btn-spotify:hover { transform: scale(1.05); background-color: #1ed760; }
+
+        .suggest-btn { background: #282828; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 22px; border-radius: 500px; cursor: pointer; transition: 0.2s ease; font-weight: 600; }
+        .suggest-btn:hover { background: #333; border-color: var(--primary-color); transform: translateY(-2px); }
+
+        .music-card { background-color: var(--card-dark); padding: 20px; border-radius: 12px; height: 100%; transition: 0.3s; border: 1px solid transparent; }
+        .music-card:hover { background-color: #282828; border-color: rgba(255,255,255,0.1); }
+        .album-art { width: 100%; aspect-ratio: 1; background-color: #333; border-radius: 8px; margin-bottom: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .song-title { font-weight: 700; margin-bottom: 5px; }
+        .song-meta { color: var(--text-muted); font-size: 0.9rem; }
+        audio { width: 100%; height: 30px; margin-top: 15px; filter: invert(100%) hue-rotate(180deg) brightness(1.5); }
+        .retro-theme audio { filter: sepia(100%) hue-rotate(10deg) saturate(200%); }
+
+        /* Toggle Switch CSS */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #e65100; }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+<body class="{% if retro_mode %}retro-theme{% endif %}">
+
+    <nav class="navbar sticky-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand text-white fw-bold" href="/">
+                <i class="fab fa-spotify me-2"></i> MUSIC RECOMMENDER
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="me-2 fw-bold" style="font-size: 0.9rem;">⏳ 90s Time Machine</span>
+                <label class="switch">
+                    <input type="checkbox" id="retroToggle" {% if retro_mode %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="display-4 fw-bold">Find Your Next Jam</h1>
+            <p class="mb-5 retro-subtitle">Search by Song or Singer</p>
+
+            <form action="/recommend" method="POST" class="search-wrapper">
+                <input type="text" name="song_name" class="form-control search-input" placeholder="Type a song or artist..." required>
+                <input type="hidden" name="retro_mode" id="retroInput" value="{% if retro_mode %}true{% else %}false{% endif %}">
+                <button type="submit" class="btn btn-spotify">Get Recommendations</button>
+            </form>
+
+            <div class="mt-4" style="max-width: 650px; margin: 0 auto;">
+                <div class="d-flex justify-content-center flex-wrap" style="gap: 12px;">
+                    <div class="suggest-btn" onclick="quickSearch('Gulaabi Aankhen')">Gulaabi Aankhen</div>
+                    <div class="suggest-btn" onclick="quickSearch('Udit Narayan')">Udit Narayan</div>
+                    <div class="suggest-btn" onclick="quickSearch('Arijit Singh')">Arijit Singh</div>
+                </div>
+            </div>
+
+            {% if error %}
+                <div class="alert alert-danger mt-4 bg-transparent border-danger text-danger fw-bold">{{ error }}</div>
+            {% endif %}
+        </div>
+
+        {% if recommendations %}
+        <h4 class="mb-4">
+            {% if retro_mode %}📼 90s MIxtape for You {% else %}✨ Recommended For You {% endif %}
+        </h4>
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
+            {% for song in recommendations %}
+            <div class="col">
+                <div class="music-card">
+                    <div class="album-art">
+                        {% if song.image_url %}
+                            <img src="{{ song.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <i class="fas fa-music fa-3x text-secondary"></i>
+                        {% endif %}
+                    </div>
+                    <div class="song-title text-truncate" title="{{ song.name }}">{{ song.name }}</div>
+                    <div class="song-meta">{{ song.artists }} <br> <small>({{ song.year }})</small></div>
+                    
+                    {% if song.preview_url %}
+                        <audio controls><source src="{{ song.preview_url }}" type="audio/mpeg"></audio>
+                    {% else %}
+                        <p class="small text-muted mt-2"><i class="fas fa-microphone-slash me-1"></i> No Preview</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="text-center py-5 mt-5">
+        <p class="fw-bold">&copy; 2026 Bhakti Mestri | Final Year Project</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        // Autocomplete Logic
+        $(function() {
+            $(".search-input").autocomplete({
+                source: function(request, response) {
+                    $.getJSON("/autocomplete", { q: request.term }, function(data) {
+                        response(data);
+                    });
+                },
+                minLength: 2,
+                select: function(event, ui) {
+                    $(".search-input").val(ui.item.value);
+                    $(this).closest('form').submit();
+                }
+            });
+        });
+
+        // Quick Search Button Logic
+        function quickSearch(songName) {
+            const input = document.querySelector('.search-input');
+            if(input) {
+                input.value = songName;
+                setTimeout(() => { input.closest('form').submit(); }, 150);
+            }
+        }
+
+        // --- TIME MACHINE TOGGLE LOGIC ---
+        const toggle = document.getElementById('retroToggle');
+        const hiddenInput = document.getElementById('retroInput');
+        
+        toggle.addEventListener('change', function() {
+            if(this.checked) {
+                document.body.classList.add('retro-theme');
+                hiddenInput.value = "true";
+            } else {
+                document.body.classList.remove('retro-theme');
+                hiddenInput.value = "false";
+            }
+        });
+    </script>
+</body>
+</html>
